@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from app.models import User
 from app.db import get_db
 import sys
@@ -29,5 +29,9 @@ def signup():
     print('User creation failed')
     db.rollback()
     return jsonify(message = 'Signup failed!!!'), 500
+
+  session.clear()
+  session['user_id'] = newUser.id
+  session['loggedIn'] = True
 
   return jsonify(id = newUser.id)
