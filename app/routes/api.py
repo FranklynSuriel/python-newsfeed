@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify, session
-from app.models import User
+from app.models import User, Post, Comment, Vote
 from app.db import get_db
 import sys
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
+# User routes
 @bp.route('/users', methods=['POST'])
 def signup():
   data = request.get_json()
@@ -36,12 +37,14 @@ def signup():
 
   return jsonify(id = newUser.id)
 
+# logout route
 @bp.route('/users/logout', methods=['POST'])
 def logout():
   # remove session variables
   session.clear()
   return '', 204
 
+# login route
 @bp.route('/users/login', methods=['POST'])
 def login():
   data = request.get_json()
@@ -61,3 +64,51 @@ def login():
     print(sys.exc_info()[0])
 
   return jsonify(message = 'Incorrect credentials'), 400
+
+# comments route
+@bp.route('/comments',  methods=['POST'])
+def comment():
+  data = request.get_json()
+  db = get_db()
+
+  try:
+  # create a new comment
+    newComment = Comment(
+      comment_text = data['comment_text'],
+      post_id = data['post_id'],
+      user_id = session.get('user_id')
+    )
+
+    db.add(newComment)
+    db.commit()
+    
+    return jsonify(id = newComment.id)
+
+  except:
+    print(sys.exc_info()[0])
+
+    db.rollback()
+    return jsonify(message = 'Comment failed'), 500
+
+# upvote route
+@bp.route('/posts/upvote', methods=['PUT'])
+def upvote():
+  data = request.get_json()
+  db = get_db()
+
+  try:
+    # create a new vote with incoming id and session id
+    newVote = Vote(
+      post_id = data['post_id'],
+      user_id = session.get('user_id')
+    )
+
+    db.add(newVote)
+    db.commit()
+  except:
+    print(sys.exc_info()[0])
+
+    db.rollback()
+    return jsonify(message = 'Upvote failed'), 500
+
+  return '', 204
